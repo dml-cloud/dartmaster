@@ -655,91 +655,126 @@
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const wireR = r * 1.02;
-      ctx.beginPath();
-      ctx.arc(cx, cy, wireR, 0, Math.PI * 2);
-      ctx.fillStyle = '#2a1810';
-      ctx.fill();
-
       const segmentAngle = (Math.PI * 2) / 20;
-      const doubleWidth = r * 0.16;
-      const tripleWidth = r * 0.10;
 
+      // Draw all 20 segments
       for (let i = 0; i < 20; i++) {
         const startAngle = i * segmentAngle - Math.PI / 2 - segmentAngle / 2;
+        const endAngle = startAngle + segmentAngle;
         const isEven = i % 2 === 0;
-        const baseColor = isEven ? COLORS.black : COLORS.red;
-        const ringColor = isEven ? COLORS.red : COLORS.black;
 
+        // Radii
         const outerR = r;
-        const doubleOuter = r;
-        const doubleInner = r - doubleWidth;
-        const tripleOuter = r - doubleWidth - (r * 0.04);
-        const tripleInner = tripleOuter - tripleWidth;
-        const innerR = r * 0.16;
+        const doubleInner = r * 0.84;
+        const tripleOuter = r * 0.80;
+        const tripleInner = r * 0.70;
+        const outerBullR = r * 0.54;
+        const innerBullR = r * 0.22;
+        const bullseyeR = r * 0.06;
 
+        // Colors: even segments start with black, odd with red
+        const evenSeg = '#1a1a1a';
+        const oddSeg = '#c41e3a';
+        const evenTriple = '#c41e3a';
+        const oddTriple = '#1a1a1a';
+
+        const segColor = isEven ? evenSeg : oddSeg;
+        const tripleColor = isEven ? evenTriple : oddTriple;
+
+        // === OUTER SINGLE (black/red) - from doubleInner to outerR ===
         ctx.beginPath();
-        ctx.arc(cx, cy, outerR, startAngle, startAngle + segmentAngle);
-        ctx.arc(cx, cy, doubleInner, startAngle + segmentAngle, startAngle, true);
+        ctx.arc(cx, cy, outerR, startAngle, endAngle);
+        ctx.arc(cx, cy, doubleInner, endAngle, startAngle, true);
         ctx.closePath();
-        ctx.fillStyle = baseColor;
+        ctx.fillStyle = segColor;
         ctx.fill();
 
+        // === DOUBLE WIRE (gold) - at outer edge ===
         ctx.beginPath();
-        ctx.arc(cx, cy, doubleOuter, startAngle, startAngle + segmentAngle);
-        ctx.arc(cx, cy, doubleInner, startAngle + segmentAngle, startAngle, true);
+        ctx.arc(cx, cy, outerR, startAngle, endAngle);
+        ctx.arc(cx, cy, doubleInner, endAngle, startAngle, true);
         ctx.closePath();
         ctx.fillStyle = COLORS.gold;
         ctx.fill();
 
+        // === MIDDLE SINGLE (black/red) - between doubleInner and tripleOuter ===
         ctx.beginPath();
-        ctx.arc(cx, cy, tripleOuter, startAngle, startAngle + segmentAngle);
-        ctx.arc(cx, cy, tripleInner, startAngle + segmentAngle, startAngle, true);
+        ctx.arc(cx, cy, doubleInner, startAngle, endAngle);
+        ctx.arc(cx, cy, tripleOuter, endAngle, startAngle, true);
         ctx.closePath();
-        ctx.fillStyle = ringColor;
+        ctx.fillStyle = segColor;
         ctx.fill();
 
+        // === TRIPLE WIRE (gold) ===
         ctx.beginPath();
-        ctx.arc(cx, cy, tripleOuter, startAngle, startAngle + segmentAngle);
-        ctx.arc(cx, cy, tripleInner, startAngle + segmentAngle, startAngle, true);
+        ctx.arc(cx, cy, tripleOuter, startAngle, endAngle);
+        ctx.arc(cx, cy, tripleInner, endAngle, startAngle, true);
+        ctx.closePath();
+        ctx.fillStyle = COLORS.gold;
+        ctx.fill();
+
+        // === INNER SINGLE (red/black) - between tripleInner and outerBullR ===
+        ctx.beginPath();
+        ctx.arc(cx, cy, tripleInner, startAngle, endAngle);
+        ctx.arc(cx, cy, outerBullR, endAngle, startAngle, true);
+        ctx.closePath();
+        ctx.fillStyle = tripleColor;
+        ctx.fill();
+
+        // === OUTER BULL WIRE (gold) ===
+        ctx.beginPath();
+        ctx.arc(cx, cy, outerBullR, startAngle, endAngle);
+        ctx.arc(cx, cy, innerBullR, endAngle, startAngle, true);
         ctx.closePath();
         ctx.fillStyle = COLORS.gold;
         ctx.fill();
       }
 
+      // === OUTER BULL (green) ===
       ctx.beginPath();
-      ctx.arc(cx, cy, r * 0.16, 0, Math.PI * 2);
-      ctx.fillStyle = COLORS.outerBull;
+      ctx.arc(cx, cy, innerBullR, 0, Math.PI * 2);
+      ctx.fillStyle = COLORS.green;
       ctx.fill();
 
+      // === INNER BULL (red) ===
       ctx.beginPath();
-      ctx.arc(cx, cy, r * 0.06, 0, Math.PI * 2);
-      ctx.fillStyle = COLORS.innerBull;
+      ctx.arc(cx, cy, bullseyeR, 0, Math.PI * 2);
+      ctx.fillStyle = COLORS.red;
       ctx.fill();
 
-      ctx.beginPath();
-      ctx.arc(cx, cy, r * 0.02, 0, Math.PI * 2);
-      ctx.fillStyle = COLORS.gold;
-      ctx.fill();
-
-      ctx.strokeStyle = 'rgba(212, 175, 55, 0.3)';
+      // === SPIDER WIRES ===
+      ctx.strokeStyle = 'rgba(180, 180, 180, 0.5)';
       ctx.lineWidth = 1;
       for (let i = 0; i < 20; i++) {
         const angle = i * segmentAngle - Math.PI / 2 - segmentAngle / 2;
         ctx.beginPath();
-        ctx.moveTo(cx, cy);
+        ctx.moveTo(cx + Math.cos(angle) * innerBullR, cy + Math.sin(angle) * innerBullR);
         ctx.lineTo(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r);
         ctx.stroke();
       }
 
+      // === OUTER RING ===
+      ctx.strokeStyle = 'rgba(100, 100, 100, 0.6)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // === NUMBER RING BACKGROUND ===
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.75, 0, Math.PI * 2);
+      ctx.fill();
+
+      // === NUMBERS ===
       ctx.fillStyle = COLORS.cream;
-      ctx.font = `bold ${r * 0.08}px Roboto Mono`;
+      ctx.font = `bold ${r * 0.085}px Roboto Mono`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
       for (let i = 0; i < 20; i++) {
         const angle = i * segmentAngle - Math.PI / 2;
-        const numR = r * 0.83;
+        const numR = r * 0.68;
         const num = DARTBOARD_SEGMENTS[i];
         const x = cx + Math.cos(angle) * numR;
         const y = cy + Math.sin(angle) * numR;
@@ -747,7 +782,6 @@
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(angle + Math.PI / 2);
-        ctx.fillStyle = COLORS.cream;
         ctx.fillText(num.toString(), 0, 0);
         ctx.restore();
       }
@@ -762,26 +796,27 @@
       const r = boardRadius;
 
       if (dist > r) return { score: 0, zone: 'miss' };
-      if (dist < r * 0.02) return { score: 50, zone: 'bullseye' };
-      if (dist < r * 0.06) return { score: 25, zone: 'outer_bull' };
+      if (dist < r * 0.06) return { score: 50, zone: 'bullseye' };
+      if (dist < r * 0.22) return { score: 25, zone: 'outer_bull' };
 
       let angle = Math.atan2(dy, dx) + Math.PI / 2 + Math.PI / 20;
       if (angle < 0) angle += Math.PI * 2;
       const segmentIndex = Math.floor(angle / (Math.PI * 2 / 20)) % 20;
       const segmentNum = DARTBOARD_SEGMENTS[segmentIndex];
 
-      const doubleOuter = r;
-      const doubleInner = r - r * 0.16;
-      const tripleOuter = r - r * 0.20;
-      const tripleInner = tripleOuter - r * 0.10;
+      const outerR = r;
+      const doubleInner = r * 0.84;
+      const tripleOuter = r * 0.80;
+      const tripleInner = r * 0.70;
+      const outerBullR = r * 0.54;
 
-      if (dist >= doubleInner && dist <= doubleOuter) {
+      if (dist >= doubleInner && dist <= outerR) {
         return { score: segmentNum * 2, zone: 'double', number: segmentNum };
       }
       if (dist >= tripleInner && dist <= tripleOuter) {
         return { score: segmentNum * 3, zone: 'triple', number: segmentNum };
       }
-      if (dist <= r * 0.16) {
+      if (dist >= outerBullR && dist < doubleInner) {
         return { score: segmentNum, zone: 'single', number: segmentNum };
       }
 
