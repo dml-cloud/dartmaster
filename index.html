@@ -164,23 +164,40 @@
       left: 0;
       top: 50%;
       transform: translateY(-50%);
-      width: 20px;
-      height: 200px;
-      background: rgba(0,0,0,0.6);
-      border: 1px solid rgba(212, 175, 55, 0.3);
-      border-radius: 10px;
+      width: 24px;
+      height: 220px;
+      background: linear-gradient(180deg, #222 0%, #111 100%);
+      border: 2px solid #444;
+      border-radius: 12px;
       overflow: hidden;
+      box-shadow: inset 0 2px 10px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);
     }
 
-    .power-fill {
+    .power-indicator {
       position: absolute;
+      left: 2px;
+      right: 2px;
+      height: 6px;
+      background: linear-gradient(90deg, #ff3333, #ffaa00, #33ff33);
+      border-radius: 3px;
       bottom: 0;
+      transition: bottom 0.02s linear, height 0.02s linear;
+      box-shadow: 0 0 10px currentColor;
+    }
+
+    .power-zone {
+      position: absolute;
       left: 0;
       right: 0;
-      height: 0%;
-      background: linear-gradient(180deg, #ff4444 0%, var(--gold) 50%, #44ff44 100%);
-      transition: height 0.05s linear;
+      font-size: 8px;
+      color: rgba(255,255,255,0.3);
+      text-align: center;
+      font-family: 'Roboto Mono', monospace;
     }
+
+    .power-zone.top { top: 5px; content: '100'; }
+    .power-zone.mid { top: 50%; transform: translateY(-50%); }
+    .power-zone.bot { bottom: 5px; }
 
     .dart-rack {
       display: flex;
@@ -507,7 +524,7 @@
 
     <div class="game-area">
       <div class="power-meter">
-        <div class="power-fill" id="powerFill"></div>
+        <div class="power-indicator" id="powerIndicator"></div>
       </div>
       <canvas id="dartboard"></canvas>
       <div class="crosshair" id="crosshair"></div>
@@ -554,13 +571,14 @@
 
     const DARTBOARD_SEGMENTS = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
     const COLORS = {
-      black: '#1a1a1a',
-      red: '#c41e3a',
-      green: '#0d5c2e',
-      cream: '#f5f5dc',
+      black: '#0a0a0a',
+      red: '#d63030',
+      green: '#006633',
+      cream: '#f0e6d3',
       gold: '#d4af37',
-      outerBull: '#0d5c2e',
-      innerBull: '#c41e3a'
+      outerBull: '#006633',
+      innerBull: '#d63030',
+      spider: '#c0c0c0'
     };
 
     let boardRadius = 140;
@@ -575,7 +593,10 @@
       highScore: 0,
       closed: {},
       power: 0,
+      precision: 0,
       isCharging: false,
+      isSweeping: false,
+      sweepDirection: 1,
       aimX: 0,
       aimY: 0,
       isAiming: false,
@@ -655,36 +676,37 @@
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const wireR = r * 1.02;
+      // Outer black ring (spider body)
+      const outerR = r * 1.05;
       ctx.beginPath();
-      ctx.arc(cx, cy, wireR, 0, Math.PI * 2);
-      ctx.fillStyle = '#2a1810';
+      ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+      ctx.fillStyle = '#1a1a1a';
       ctx.fill();
 
-      const segmentAngle = (Math.PI * 2) / 20;
-      const doubleWidth = r * 0.16;
-      const tripleWidth = r * 0.10;
+      // Wire frame with subtle 3D effect
+      ctx.strokeStyle = 'rgba(40, 40, 40, 0.8)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
 
+      const segmentAngle = (Math.PI * 2) / 20;
+
+      // Draw segments
       for (let i = 0; i < 20; i++) {
         const startAngle = i * segmentAngle - Math.PI / 2 - segmentAngle / 2;
         const isEven = i % 2 === 0;
         const baseColor = isEven ? COLORS.black : COLORS.red;
         const ringColor = isEven ? COLORS.red : COLORS.black;
 
-        const outerR = r;
+        // Base segment (single area)
         const doubleOuter = r;
-        const doubleInner = r - doubleWidth;
-        const tripleOuter = r - doubleWidth - (r * 0.04);
-        const tripleInner = tripleOuter - tripleWidth;
+        const doubleInner = r - r * 0.16;
+        const tripleOuter = r - r * 0.20;
+        const tripleInner = tripleOuter - r * 0.10;
         const innerR = r * 0.16;
 
-        ctx.beginPath();
-        ctx.arc(cx, cy, outerR, startAngle, startAngle + segmentAngle);
-        ctx.arc(cx, cy, doubleInner, startAngle + segmentAngle, startAngle, true);
-        ctx.closePath();
-        ctx.fillStyle = baseColor;
-        ctx.fill();
-
+        // Outer wire ring
         ctx.beginPath();
         ctx.arc(cx, cy, doubleOuter, startAngle, startAngle + segmentAngle);
         ctx.arc(cx, cy, doubleInner, startAngle + segmentAngle, startAngle, true);
@@ -692,37 +714,59 @@
         ctx.fillStyle = COLORS.gold;
         ctx.fill();
 
+        // Single segment
         ctx.beginPath();
-        ctx.arc(cx, cy, tripleOuter, startAngle, startAngle + segmentAngle);
-        ctx.arc(cx, cy, tripleInner, startAngle + segmentAngle, startAngle, true);
+        ctx.arc(cx, cy, doubleInner, startAngle, startAngle + segmentAngle);
+        ctx.arc(cx, cy, tripleOuter, startAngle + segmentAngle, startAngle, true);
         ctx.closePath();
-        ctx.fillStyle = ringColor;
+        ctx.fillStyle = baseColor;
         ctx.fill();
 
+        // Triple wire
         ctx.beginPath();
         ctx.arc(cx, cy, tripleOuter, startAngle, startAngle + segmentAngle);
         ctx.arc(cx, cy, tripleInner, startAngle + segmentAngle, startAngle, true);
         ctx.closePath();
         ctx.fillStyle = COLORS.gold;
         ctx.fill();
+
+        // Triple segment
+        ctx.beginPath();
+        ctx.arc(cx, cy, tripleInner, startAngle, startAngle + segmentAngle);
+        ctx.arc(cx, cy, innerR, startAngle + segmentAngle, startAngle, true);
+        ctx.closePath();
+        ctx.fillStyle = ringColor;
+        ctx.fill();
+
+        // Inner double wire (outer bull)
+        ctx.beginPath();
+        ctx.arc(cx, cy, innerR, startAngle, startAngle + segmentAngle);
+        ctx.arc(cx, cy, r * 0.06, startAngle + segmentAngle, startAngle, true);
+        ctx.closePath();
+        ctx.fillStyle = COLORS.gold;
+        ctx.fill();
       }
 
+      // Outer bull (green)
       ctx.beginPath();
       ctx.arc(cx, cy, r * 0.16, 0, Math.PI * 2);
       ctx.fillStyle = COLORS.outerBull;
       ctx.fill();
 
+      // Inner bull (red)
       ctx.beginPath();
       ctx.arc(cx, cy, r * 0.06, 0, Math.PI * 2);
       ctx.fillStyle = COLORS.innerBull;
       ctx.fill();
 
+      // Bullseye (gold)
       ctx.beginPath();
       ctx.arc(cx, cy, r * 0.02, 0, Math.PI * 2);
       ctx.fillStyle = COLORS.gold;
       ctx.fill();
 
-      ctx.strokeStyle = 'rgba(212, 175, 55, 0.3)';
+      // Spider wires (number divisions)
+      ctx.strokeStyle = 'rgba(192, 192, 192, 0.4)';
       ctx.lineWidth = 1;
       for (let i = 0; i < 20; i++) {
         const angle = i * segmentAngle - Math.PI / 2 - segmentAngle / 2;
@@ -732,14 +776,21 @@
         ctx.stroke();
       }
 
+      // Number ring background
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.88, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Numbers with WINMAU style
       ctx.fillStyle = COLORS.cream;
-      ctx.font = `bold ${r * 0.08}px Roboto Mono`;
+      ctx.font = `bold ${r * 0.075}px Roboto Mono`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
       for (let i = 0; i < 20; i++) {
         const angle = i * segmentAngle - Math.PI / 2;
-        const numR = r * 0.83;
+        const numR = r * 0.82;
         const num = DARTBOARD_SEGMENTS[i];
         const x = cx + Math.cos(angle) * numR;
         const y = cy + Math.sin(angle) * numR;
@@ -751,6 +802,13 @@
         ctx.fillText(num.toString(), 0, 0);
         ctx.restore();
       }
+
+      // Brand text "WINMAU"
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.font = `bold ${r * 0.04}px Oswald`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('WINMAU', cx, cy + r * 0.45);
     }
 
     function getScore(x, y) {
@@ -791,11 +849,15 @@
     function throwDart(targetX, targetY) {
       initAudio();
 
-      const power = state.power;
-      const accuracy = 1 - (power * 0.015);
+      const power = state.power / 100;
+      const precision = state.precision / 100;
 
-      const offsetX = (Math.random() - 0.5) * boardRadius * (1 - accuracy) * 0.5;
-      const offsetY = (Math.random() - 0.5) * boardRadius * (1 - accuracy) * 0.5;
+      // Higher power = more deviation, higher precision = less deviation
+      const baseDeviation = boardRadius * 0.35;
+      const deviation = baseDeviation * (1 - power * 0.5) * (1 - precision * 0.7);
+
+      const offsetX = (Math.random() - 0.5) * deviation * 2;
+      const offsetY = (Math.random() - 0.5) * deviation * 2;
 
       const finalX = targetX + offsetX;
       const finalY = targetY + offsetY;
@@ -1046,25 +1108,58 @@
       }
     }
 
-    let powerInterval = null;
+    let sweepInterval = null;
 
-    function startCharging() {
+    function startSweeping() {
       initAudio();
-      state.isCharging = true;
-      state.power = 0;
+      state.isSweeping = true;
       state.isAiming = true;
+      state.power = 0;
+      state.precision = 0;
+      state.sweepDirection = 1;
 
-      powerInterval = setInterval(() => {
-        state.power = Math.min(state.power + 2, 100);
-        document.getElementById('powerFill').style.height = state.power + '%';
-      }, 16);
+      // Random starting position for variety
+      state.power = Math.random() * 30;
+      state.precision = 50;
+
+      const indicator = document.getElementById('powerIndicator');
+
+      sweepInterval = setInterval(() => {
+        // Sweep power up and down (sine wave motion)
+        state.power += state.sweepDirection * 2.5;
+
+        // Sweep precision - follows power but slightly delayed
+        if (state.sweepDirection > 0) {
+          state.precision = state.power * 0.95;
+        } else {
+          state.precision = Math.max(0, state.precision - 1.5);
+        }
+
+        // Reverse at bounds
+        if (state.power >= 100) {
+          state.power = 100;
+          state.sweepDirection = -1;
+        } else if (state.power <= 0) {
+          state.power = 0;
+          state.sweepDirection = 1;
+        }
+
+        // Update indicator (power affects height, precision affects width/glow)
+        const height = 30 + (state.power / 100) * 180;
+        const bottom = (state.power / 100) * (220 - height);
+        const glowIntensity = state.precision / 100;
+
+        indicator.style.height = height + 'px';
+        indicator.style.bottom = bottom + 'px';
+        indicator.style.boxShadow = `0 0 ${5 + glowIntensity * 15}px rgba(255, ${150 + glowIntensity * 105}, 0, ${0.3 + glowIntensity * 0.5})`;
+      }, 30);
     }
 
     function release() {
       if (!state.isAiming) return;
 
-      clearInterval(powerInterval);
-      state.isCharging = false;
+      clearInterval(sweepInterval);
+      state.isSweeping = false;
       state.isAiming = false;
 
       const rect = canvas.getBoundingClientRect();
@@ -1075,9 +1170,11 @@
         throwDart(x, y);
       }
 
-      state.power = 0;
-      document.getElementById('powerFill').style.height = '0%';
-      document.getElementById('crosshair').style.display = 'none';
+      // Reset indicator
+      const indicator = document.getElementById('powerIndicator');
+      indicator.style.height = '0px';
+      indicator.style.bottom = '0px';
+      indicator.style.boxShadow = 'none';
     }
 
     canvas.addEventListener('mousedown', (e) => {
@@ -1091,11 +1188,11 @@
       crosshair.style.left = (e.clientX - rect.left - 15) + 'px';
       crosshair.style.top = (e.clientY - rect.top - 15) + 'px';
 
-      startCharging();
+      startSweeping();
     });
 
     canvas.addEventListener('mousemove', (e) => {
-      if (state.isCharging) {
+      if (state.isSweeping) {
         const rect = canvas.getBoundingClientRect();
         state.aimX = e.clientX;
         state.aimY = e.clientY;
@@ -1121,12 +1218,12 @@
       crosshair.style.left = (touch.clientX - rect.left - 15) + 'px';
       crosshair.style.top = (touch.clientY - rect.top - 15) + 'px';
 
-      startCharging();
+      startSweeping();
     });
 
     canvas.addEventListener('touchmove', (e) => {
       e.preventDefault();
-      if (state.isCharging) {
+      if (state.isSweeping) {
         const touch = e.touches[0];
         const rect = canvas.getBoundingClientRect();
         state.aimX = touch.clientX;

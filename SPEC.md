@@ -27,11 +27,12 @@
 - **Background**: Dark wood texture gradient (#1a1209 to #2d1f0f) with subtle noise
 
 ### Color Palette
-- **Primary**: Deep green (#0d5c2e) - dartboard outer ring
-- **Accent Gold**: (#d4af37) - doubles/triples rings, highlights
-- **Red**: (#c41e3a) - odd numbers segments
-- **Black**: (#1a1a1a) - even numbers segments
-- **Cream**: (#f5f5dc) - bullseye, wire highlights
+- **Primary**: Deep green (#006633) - dartboard outer ring (WINMAU style)
+- **Accent Gold**: (#d4af37) - doubles/triples rings, highlights, spider
+- **Red**: (#d63030) - odd numbers segments (vibrant WINMAU red)
+- **Black**: (#0a0a0a) - even numbers segments
+- **Cream**: (#f0e6d3) - bullseye, wire highlights
+- **Spider**: (#c0c0c0) - silver spider wire accents
 - **UI Dark**: (#0f0f0f) with rgba overlays
 - **UI Text**: (#e8e8e8)
 
@@ -65,8 +66,10 @@
 
 ### Controls
 - **Touch/Click**: Tap on board to aim
-- **Hold & Release**: Power meter fills, release to throw
-- **Power Meter**: Vertical bar on side, 0.5s to full charge
+- **Hold**: Power/precision bar oscillates automatically (sine wave pattern)
+- **Release**: Stops the bar and throws with that power/precision setting
+- **Power Bar**: Vertical bar showing oscillating power (0-100%), affects dart distance from target
+- **Precision Indicator**: Glowing bar height/width indicates precision level - higher precision = less deviation
 
 ### Scoring
 - Hit detection via polar coordinates (angle + distance from center)
