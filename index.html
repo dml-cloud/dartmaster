@@ -676,72 +676,73 @@
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Outer black ring (spider body)
-      const outerR = r * 1.05;
-      ctx.beginPath();
-      ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
-      ctx.fillStyle = '#1a1a1a';
-      ctx.fill();
-
-      // Wire frame with subtle 3D effect
-      ctx.strokeStyle = 'rgba(40, 40, 40, 0.8)';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.stroke();
-
       const segmentAngle = (Math.PI * 2) / 20;
+      const doubleOuter = r;
+      const doubleWidth = r * 0.16;
+      const doubleInner = r - doubleWidth;
+      const tripleOuter = doubleInner - r * 0.04;
+      const tripleWidth = r * 0.10;
+      const tripleInner = tripleOuter - tripleWidth;
+      const outerBullR = r * 0.16;
+      const innerBullR = r * 0.06;
+      const bullseyeR = r * 0.02;
 
-      // Draw segments
+      // Draw each segment
       for (let i = 0; i < 20; i++) {
         const startAngle = i * segmentAngle - Math.PI / 2 - segmentAngle / 2;
+        const endAngle = startAngle + segmentAngle;
         const isEven = i % 2 === 0;
-        const baseColor = isEven ? COLORS.black : COLORS.red;
-        const ringColor = isEven ? COLORS.red : COLORS.black;
 
-        // Base segment (single area)
-        const doubleOuter = r;
-        const doubleInner = r - r * 0.16;
-        const tripleOuter = r - r * 0.20;
-        const tripleInner = tripleOuter - r * 0.10;
-        const innerR = r * 0.16;
-
-        // Outer wire ring
+        // Single segment (base color)
+        const singleColor = isEven ? COLORS.black : COLORS.red;
         ctx.beginPath();
-        ctx.arc(cx, cy, doubleOuter, startAngle, startAngle + segmentAngle);
-        ctx.arc(cx, cy, doubleInner, startAngle + segmentAngle, startAngle, true);
+        ctx.moveTo(cx + Math.cos(startAngle) * doubleInner, cy + Math.sin(startAngle) * doubleInner);
+        ctx.arc(cx, cy, doubleInner, startAngle, endAngle);
+        ctx.lineTo(cx + Math.cos(endAngle) * tripleOuter, cy + Math.sin(endAngle) * tripleOuter);
+        ctx.arc(cx, cy, tripleOuter, endAngle, startAngle, true);
         ctx.closePath();
-        ctx.fillStyle = COLORS.gold;
+        ctx.fillStyle = singleColor;
         ctx.fill();
 
-        // Single segment
+        // Double ring (gold)
         ctx.beginPath();
-        ctx.arc(cx, cy, doubleInner, startAngle, startAngle + segmentAngle);
-        ctx.arc(cx, cy, tripleOuter, startAngle + segmentAngle, startAngle, true);
-        ctx.closePath();
-        ctx.fillStyle = baseColor;
-        ctx.fill();
-
-        // Triple wire
-        ctx.beginPath();
-        ctx.arc(cx, cy, tripleOuter, startAngle, startAngle + segmentAngle);
-        ctx.arc(cx, cy, tripleInner, startAngle + segmentAngle, startAngle, true);
+        ctx.arc(cx, cy, doubleOuter, startAngle, endAngle);
+        ctx.arc(cx, cy, doubleInner, endAngle, startAngle, true);
         ctx.closePath();
         ctx.fillStyle = COLORS.gold;
         ctx.fill();
 
         // Triple segment
+        const tripleColor = isEven ? COLORS.red : COLORS.black;
         ctx.beginPath();
-        ctx.arc(cx, cy, tripleInner, startAngle, startAngle + segmentAngle);
-        ctx.arc(cx, cy, innerR, startAngle + segmentAngle, startAngle, true);
+        ctx.moveTo(cx + Math.cos(startAngle) * tripleInner, cy + Math.sin(startAngle) * tripleInner);
+        ctx.arc(cx, cy, tripleInner, startAngle, endAngle);
+        ctx.lineTo(cx + Math.cos(endAngle) * tripleOuter, cy + Math.sin(endAngle) * tripleOuter);
+        ctx.arc(cx, cy, tripleOuter, endAngle, startAngle, true);
         ctx.closePath();
-        ctx.fillStyle = ringColor;
+        ctx.fillStyle = tripleColor;
         ctx.fill();
 
-        // Inner double wire (outer bull)
+        // Triple ring (gold)
         ctx.beginPath();
-        ctx.arc(cx, cy, innerR, startAngle, startAngle + segmentAngle);
-        ctx.arc(cx, cy, r * 0.06, startAngle + segmentAngle, startAngle, true);
+        ctx.arc(cx, cy, tripleOuter, startAngle, endAngle);
+        ctx.arc(cx, cy, tripleInner, endAngle, startAngle, true);
+        ctx.closePath();
+        ctx.fillStyle = COLORS.gold;
+        ctx.fill();
+
+        // Inner single area
+        ctx.beginPath();
+        ctx.arc(cx, cy, tripleInner, startAngle, endAngle);
+        ctx.arc(cx, cy, outerBullR, endAngle, startAngle, true);
+        ctx.closePath();
+        ctx.fillStyle = singleColor;
+        ctx.fill();
+
+        // Outer bull wire (gold)
+        ctx.beginPath();
+        ctx.arc(cx, cy, outerBullR, startAngle, endAngle);
+        ctx.arc(cx, cy, innerBullR, endAngle, startAngle, true);
         ctx.closePath();
         ctx.fillStyle = COLORS.gold;
         ctx.fill();
@@ -749,48 +750,55 @@
 
       // Outer bull (green)
       ctx.beginPath();
-      ctx.arc(cx, cy, r * 0.16, 0, Math.PI * 2);
+      ctx.arc(cx, cy, outerBullR, 0, Math.PI * 2);
       ctx.fillStyle = COLORS.outerBull;
       ctx.fill();
 
       // Inner bull (red)
       ctx.beginPath();
-      ctx.arc(cx, cy, r * 0.06, 0, Math.PI * 2);
+      ctx.arc(cx, cy, innerBullR, 0, Math.PI * 2);
       ctx.fillStyle = COLORS.innerBull;
       ctx.fill();
 
       // Bullseye (gold)
       ctx.beginPath();
-      ctx.arc(cx, cy, r * 0.02, 0, Math.PI * 2);
+      ctx.arc(cx, cy, bullseyeR, 0, Math.PI * 2);
       ctx.fillStyle = COLORS.gold;
       ctx.fill();
 
-      // Spider wires (number divisions)
-      ctx.strokeStyle = 'rgba(192, 192, 192, 0.4)';
-      ctx.lineWidth = 1;
+      // Spider wires
+      ctx.strokeStyle = 'rgba(192, 192, 192, 0.5)';
+      ctx.lineWidth = 1.5;
       for (let i = 0; i < 20; i++) {
         const angle = i * segmentAngle - Math.PI / 2 - segmentAngle / 2;
         ctx.beginPath();
-        ctx.moveTo(cx, cy);
+        ctx.moveTo(cx + Math.cos(angle) * outerBullR, cy + Math.sin(angle) * outerBullR);
         ctx.lineTo(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r);
         ctx.stroke();
       }
 
-      // Number ring background
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      // Outer spider ring
+      ctx.strokeStyle = 'rgba(100, 100, 100, 0.6)';
+      ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(cx, cy, r * 0.88, 0, Math.PI * 2);
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Number ring background
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.85, 0, Math.PI * 2);
       ctx.fill();
 
-      // Numbers with WINMAU style
+      // Numbers
       ctx.fillStyle = COLORS.cream;
-      ctx.font = `bold ${r * 0.075}px Roboto Mono`;
+      ctx.font = `bold ${r * 0.08}px Roboto Mono`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
       for (let i = 0; i < 20; i++) {
         const angle = i * segmentAngle - Math.PI / 2;
-        const numR = r * 0.82;
+        const numR = r * 0.78;
         const num = DARTBOARD_SEGMENTS[i];
         const x = cx + Math.cos(angle) * numR;
         const y = cy + Math.sin(angle) * numR;
@@ -798,17 +806,9 @@
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(angle + Math.PI / 2);
-        ctx.fillStyle = COLORS.cream;
         ctx.fillText(num.toString(), 0, 0);
         ctx.restore();
       }
-
-      // Brand text "WINMAU"
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-      ctx.font = `bold ${r * 0.04}px Oswald`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('WINMAU', cx, cy + r * 0.45);
     }
 
     function getScore(x, y) {
