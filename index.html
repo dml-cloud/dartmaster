@@ -152,6 +152,8 @@
       border-radius: 50%;
       cursor: crosshair;
       touch-action: none;
+      min-width: 200px;
+      min-height: 200px;
       box-shadow:
         0 0 0 8px #2a1810,
         0 0 0 12px #1a0f08,
@@ -463,6 +465,8 @@
 
     .game-container {
       display: none;
+      width: 100%;
+      min-height: 100vh;
     }
 
     .game-container.visible {
@@ -550,6 +554,7 @@
       const game = document.getElementById('gameContainer');
       splash.classList.add('hidden');
       game.classList.add('visible');
+      setTimeout(resize, 100);
     });
 
     const DARTBOARD_SEGMENTS = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
@@ -641,10 +646,13 @@
 
     function resize() {
       const container = canvas.parentElement;
-      const size = Math.min(container.clientWidth - 60, 320);
+      const containerWidth = container.clientWidth || 320;
+      const size = Math.max(200, Math.min(containerWidth - 60, 320));
       boardRadius = size / 2;
       canvas.width = size;
       canvas.height = size;
+      canvas.style.width = size + 'px';
+      canvas.style.height = size + 'px';
       drawBoard();
     }
 
