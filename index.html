@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>DartMaster</title>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --green: #0d5c2e;
+      --gold: #d4af37;
+      --red: #c41e3a;
+      --black: #1a1a1a;
+      --cream: #f5f5dc;
+      --ui-dark: #0f0f0f;
+      --ui-text: #e8e8e8;
+      --wood-dark: #1a1209;
+      --wood-light: #2d1f0f;
+    }
+
+    body {
+      font-family: 'Oswald', sans-serif;
+      background: linear-gradient(145deg, var(--wood-dark) 0%, var(--wood-light) 50%, var(--wood-dark) 100%);
+      min-height: 100vh;
+      color: var(--ui-text);
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noise)'/%3E%3C/svg%3E");
+      opacity: 0.03;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      text-align: center;
+      padding: 8px 0 12px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      background: linear-gradient(180deg, var(--gold) 0%, #8b6914 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 2px 10px rgba(212, 175, 55, 0.3);
+    }
+
+    .mode-selector {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 10px;
+    }
+
+    .mode-btn {
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      border: 1px solid var(--gold);
+      background: rgba(0,0,0,0.4);
+      color: var(--ui-text);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .mode-btn.active {
+      background: var(--gold);
+      color: var(--black);
+    }
+
+    .mode-btn:hover:not(.active) {
+      background: rgba(212, 175, 55, 0.2);
+    }
+
+    .score-panel {
+      background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      border-radius: 8px;
+      padding: 12px;
+      margin: 12px 0;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+
+    .score-item {
+      text-align: center;
+    }
+
+    .score-label {
+      font-size: 0.65rem;
+      color: rgba(232,232,232,0.5);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .score-value {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 1.8rem;
+      font-weight: 500;
+      color: var(--gold);
+    }
+
+    .score-value.highlight {
+      animation: pulse 0.3s ease;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .game-area {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 10px 0;
+    }
+
+    #dartboard {
+      border-radius: 50%;
+      cursor: crosshair;
+      touch-action: none;
+      box-shadow:
+        0 0 0 8px #2a1810,
+        0 0 0 12px #1a0f08,
+        0 0 30px rgba(0,0,0,0.8),
+        inset 0 0 20px rgba(0,0,0,0.5);
+    }
+
+    .power-meter {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 200px;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .power-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 0%;
+      background: linear-gradient(180deg, #ff4444 0%, var(--gold) 50%, #44ff44 100%);
+      transition: height 0.05s linear;
+    }
+
+    .dart-rack {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin: 15px 0;
+    }
+
+    .dart-slot {
+      width: 30px;
+      height: 80px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      border-radius: 4px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 5px;
+    }
+
+    .dart-icon {
+      width: 20px;
+      height: 50px;
+      opacity: 0.9;
+    }
+
+    .dart-icon.used {
+      opacity: 0.2;
+    }
+
+    .stats-panel {
+      background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      border-radius: 8px;
+      padding: 10px;
+      margin: 10px 0;
+    }
+
+    .stats-row {
+      display: flex;
+      justify-content: space-around;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.8rem;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 0.6rem;
+      color: rgba(232,232,232,0.4);
+      text-transform: uppercase;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .btn {
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 10px 20px;
+      border: 1px solid var(--gold);
+      background: rgba(0,0,0,0.5);
+      color: var(--ui-text);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-radius: 4px;
+    }
+
+    .btn:hover {
+      background: rgba(212, 175, 55, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn.primary {
+      background: var(--gold);
+      color: var(--black);
+    }
+
+    .btn.sound-on {
+      border-color: #44ff44;
+    }
+
+    .round-scores {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .round-score {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+    }
+
+    .score-popup {
+      position: fixed;
+      pointer-events: none;
+      font-family: 'Oswald', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--gold);
+      text-shadow: 0 0 10px rgba(212, 175, 55, 0.8);
+      animation: scoreFloat 1s ease-out forwards;
+      z-index: 100;
+    }
+
+    @keyframes scoreFloat {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-50px) scale(1.5); }
+    }
+
+    .cricket-display {
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .cricket-number {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 500;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .cricket-number.closed {
+      background: var(--gold);
+      color: var(--black);
+      border-color: var(--gold);
+    }
+
+    .message {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Oswald', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      padding: 20px 40px;
+      background: rgba(0,0,0,0.9);
+      border: 2px solid var(--gold);
+      border-radius: 8px;
+      z-index: 200;
+      animation: messageIn 0.3s ease;
+      text-align: center;
+    }
+
+    @keyframes messageIn {
+      from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+      to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+
+    .crosshair {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      pointer-events: none;
+      display: none;
+    }
+
+    .crosshair::before,
+    .crosshair::after {
+      content: '';
+      position: absolute;
+      background: rgba(212, 175, 55, 0.8);
+    }
+
+    .crosshair::before {
+      width: 2px;
+      height: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .crosshair::after {
+      width: 100%;
+      height: 2px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>DartMaster</h1>
+      <div class="mode-selector">
+        <button class="mode-btn active" data-mode="practice">Practice</button>
+        <button class="mode-btn" data-mode="501">501</button>
+        <button class="mode-btn" data-mode="cricket">Cricket</button>
+      </div>
+    </header>
+
+    <div class="score-panel">
+      <div class="score-item">
+        <div class="score-label">Score</div>
+        <div class="score-value" id="mainScore">-</div>
+      </div>
+      <div class="score-item">
+        <div class="score-label">Round</div>
+        <div class="score-value" id="roundNum">1</div>
+      </div>
+      <div class="score-item">
+        <div class="score-label">Darts</div>
+        <div class="score-value" id="dartsLeft">3</div>
+      </div>
+    </div>
+
+    <div id="cricketNumbers" class="cricket-display" style="display:none;"></div>
+
+    <div class="game-area">
+      <div class="power-meter">
+        <div class="power-fill" id="powerFill"></div>
+      </div>
+      <canvas id="dartboard"></canvas>
+      <div class="crosshair" id="crosshair"></div>
+    </div>
+
+    <div class="dart-rack" id="dartRack"></div>
+
+    <div class="stats-panel">
+      <div class="stats-row">
+        <div class="stat-item">
+          <div class="stat-label">Avg</div>
+          <div id="avgScore">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">High</div>
+          <div id="highScore">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Thrown</div>
+          <div id="totalDarts">0</div>
+        </div>
+      </div>
+      <div class="round-scores" id="roundScores"></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="undoBtn">Undo</button>
+      <button class="btn" id="newGameBtn">New Game</button>
+      <button class="btn sound-on" id="soundBtn">Sound</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('dartboard');
+    const ctx = canvas.getContext('2d');
+
+    const DARTBOARD_SEGMENTS = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
+    const COLORS = {
+      black: '#1a1a1a',
+      red: '#c41e3a',
+      green: '#0d5c2e',
+      cream: '#f5f5dc',
+      gold: '#d4af37',
+      outerBull: '#0d5c2e',
+      innerBull: '#c41e3a'
+    };
+
+    let boardRadius = 140;
+    let state = {
+      mode: 'practice',
+      score: 0,
+      round: 1,
+      dartsThisRound: 0,
+      roundScores: [],
+      totalScore: 0,
+      totalDarts: 0,
+      highScore: 0,
+      closed: {},
+      power: 0,
+      isCharging: false,
+      aimX: 0,
+      aimY: 0,
+      isAiming: false,
+      thrownDarts: [],
+      gameStartScore: 501,
+      soundEnabled: true
+    };
+
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playSound(type) {
+      if (!state.soundEnabled || !audioCtx) return;
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      switch(type) {
+        case 'hit':
+          osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.1);
+          gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.1);
+          break;
+        case 'bullseye':
+          osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.3);
+          gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.3);
+          break;
+        case 'double':
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(523, audioCtx.currentTime);
+          osc.frequency.setValueAtTime(659, audioCtx.currentTime + 0.1);
+          osc.frequency.setValueAtTime(784, audioCtx.currentTime + 0.2);
+          gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.4);
+          break;
+        case 'miss':
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.15);
+          gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.15);
+          break;
+      }
+    }
+
+    function resize() {
+      const container = canvas.parentElement;
+      const size = Math.min(container.clientWidth - 60, 320);
+      boardRadius = size / 2;
+      canvas.width = size;
+      canvas.height = size;
+      drawBoard();
+    }
+
+    function drawBoard() {
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const r = boardRadius;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const wireR = r * 1.02;
+      ctx.beginPath();
+      ctx.arc(cx, cy, wireR, 0, Math.PI * 2);
+      ctx.fillStyle = '#2a1810';
+      ctx.fill();
+
+      const segmentAngle = (Math.PI * 2) / 20;
+      const doubleWidth = r * 0.16;
+      const tripleWidth = r * 0.10;
+
+      for (let i = 0; i < 20; i++) {
+        const startAngle = i * segmentAngle - Math.PI / 2 - segmentAngle / 2;
+        const isEven = i % 2 === 0;
+        const baseColor = isEven ? COLORS.black : COLORS.red;
+        const ringColor = isEven ? COLORS.red : COLORS.black;
+
+        const outerR = r;
+        const doubleOuter = r;
+        const doubleInner = r - doubleWidth;
+        const tripleOuter = r - doubleWidth - (r * 0.04);
+        const tripleInner = tripleOuter - tripleWidth;
+        const innerR = r * 0.16;
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, outerR, startAngle, startAngle + segmentAngle);
+        ctx.arc(cx, cy, doubleInner, startAngle + segmentAngle, startAngle, true);
+        ctx.closePath();
+        ctx.fillStyle = baseColor;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, doubleOuter, startAngle, startAngle + segmentAngle);
+        ctx.arc(cx, cy, doubleInner, startAngle + segmentAngle, startAngle, true);
+        ctx.closePath();
+        ctx.fillStyle = COLORS.gold;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, tripleOuter, startAngle, startAngle + segmentAngle);
+        ctx.arc(cx, cy, tripleInner, startAngle + segmentAngle, startAngle, true);
+        ctx.closePath();
+        ctx.fillStyle = ringColor;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, tripleOuter, startAngle, startAngle + segmentAngle);
+        ctx.arc(cx, cy, tripleInner, startAngle + segmentAngle, startAngle, true);
+        ctx.closePath();
+        ctx.fillStyle = COLORS.gold;
+        ctx.fill();
+      }
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.16, 0, Math.PI * 2);
+      ctx.fillStyle = COLORS.outerBull;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.06, 0, Math.PI * 2);
+      ctx.fillStyle = COLORS.innerBull;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.02, 0, Math.PI * 2);
+      ctx.fillStyle = COLORS.gold;
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(212, 175, 55, 0.3)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 20; i++) {
+        const angle = i * segmentAngle - Math.PI / 2 - segmentAngle / 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = COLORS.cream;
+      ctx.font = `bold ${r * 0.08}px Roboto Mono`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      for (let i = 0; i < 20; i++) {
+        const angle = i * segmentAngle - Math.PI / 2;
+        const numR = r * 0.83;
+        const num = DARTBOARD_SEGMENTS[i];
+        const x = cx + Math.cos(angle) * numR;
+        const y = cy + Math.sin(angle) * numR;
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle + Math.PI / 2);
+        ctx.fillStyle = COLORS.cream;
+        ctx.fillText(num.toString(), 0, 0);
+        ctx.restore();
+      }
+    }
+
+    function getScore(x, y) {
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const dx = x - cx;
+      const dy = y - cy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const r = boardRadius;
+
+      if (dist > r) return { score: 0, zone: 'miss' };
+      if (dist < r * 0.02) return { score: 50, zone: 'bullseye' };
+      if (dist < r * 0.06) return { score: 25, zone: 'outer_bull' };
+
+      let angle = Math.atan2(dy, dx) + Math.PI / 2 + Math.PI / 20;
+      if (angle < 0) angle += Math.PI * 2;
+      const segmentIndex = Math.floor(angle / (Math.PI * 2 / 20)) % 20;
+      const segmentNum = DARTBOARD_SEGMENTS[segmentIndex];
+
+      const doubleOuter = r;
+      const doubleInner = r - r * 0.16;
+      const tripleOuter = r - r * 0.20;
+      const tripleInner = tripleOuter - r * 0.10;
+
+      if (dist >= doubleInner && dist <= doubleOuter) {
+        return { score: segmentNum * 2, zone: 'double', number: segmentNum };
+      }
+      if (dist >= tripleInner && dist <= tripleOuter) {
+        return { score: segmentNum * 3, zone: 'triple', number: segmentNum };
+      }
+      if (dist <= r * 0.16) {
+        return { score: segmentNum, zone: 'single', number: segmentNum };
+      }
+
+      return { score: segmentNum, zone: 'single', number: segmentNum };
+    }
+
+    function throwDart(targetX, targetY) {
+      initAudio();
+
+      const power = state.power;
+      const accuracy = 1 - (power * 0.015);
+
+      const offsetX = (Math.random() - 0.5) * boardRadius * (1 - accuracy) * 0.5;
+      const offsetY = (Math.random() - 0.5) * boardRadius * (1 - accuracy) * 0.5;
+
+      const finalX = targetX + offsetX;
+      const finalY = targetY + offsetY;
+
+      const hit = getScore(finalX, finalY);
+
+      state.thrownDarts.push({ x: finalX, y: finalY, score: hit.score, zone: hit.zone });
+      state.dartsThisRound++;
+      state.totalDarts++;
+
+      playSound(hit.zone === 'miss' ? 'miss' : hit.zone === 'bullseye' ? 'bullseye' : hit.zone === 'double' ? 'double' : 'hit');
+
+      if (hit.zone !== 'miss') {
+        state.totalScore += hit.score;
+        if (hit.score > state.highScore) state.highScore = hit.score;
+
+        if (state.mode === 'cricket') {
+          handleCricketHit(hit);
+        } else if (state.mode === '501') {
+          state.score -= hit.score;
+          if (state.score < 0 || (state.score === 0 && hit.zone !== 'double')) {
+            state.score = state.gameStartScore;
+            showMessage('BUST!');
+          }
+        }
+      }
+
+      showScorePopup(hit.score, targetX, targetY);
+      updateUI();
+      drawBoard();
+      drawThrownDarts();
+
+      if (state.dartsThisRound >= 3) {
+        setTimeout(endRound, 800);
+      }
+    }
+
+    function handleCricketHit(hit) {
+      const num = hit.number;
+
+      if (num >= 15 && num <= 20) {
+        if (!state.closed[num]) {
+          if (!state.cricketMarks) state.cricketMarks = {};
+          if (hit.zone === 'double') {
+            state.cricketMarks[num] = (state.cricketMarks[num] || 0) + 2;
+          } else if (hit.zone === 'triple') {
+            state.cricketMarks[num] = (state.cricketMarks[num] || 0) + 3;
+          } else {
+            state.cricketMarks[num] = (state.cricketMarks[num] || 0) + 1;
+          }
+
+          if (state.cricketMarks[num] >= 3) {
+            state.closed[num] = true;
+          }
+        }
+      } else if (hit.zone === 'bullseye') {
+        if (!state.closed['bull']) {
+          state.cricketMarks['bull'] = (state.cricketMarks['bull'] || 0) + (hit.zone === 'bullseye' ? 2 : 1);
+          if (state.cricketMarks['bull'] >= 3) {
+            state.closed['bull'] = true;
+          }
+        }
+      } else if (hit.zone === 'outer_bull') {
+        if (!state.closed['bull']) {
+          state.cricketMarks['bull'] = (state.cricketMarks['bull'] || 0) + 1;
+          if (state.cricketMarks['bull'] >= 3) {
+            state.closed['bull'] = true;
+          }
+        }
+      }
+    }
+
+    function endRound() {
+      state.roundScores.push(state.thrownDarts.reduce((sum, d) => sum + (d.score || 0), 0));
+      state.round++;
+      state.dartsThisRound = 0;
+      state.thrownDarts = [];
+      state.score = state.gameStartScore;
+
+      if (state.mode === 'cricket') {
+        checkCricketWin();
+      }
+
+      updateUI();
+      drawBoard();
+    }
+
+    function checkCricketWin() {
+      const allClosed = Object.values(state.closed).every(v => v);
+      if (allClosed) {
+        showMessage('CRICKet Winner!');
+        setTimeout(newGame, 2000);
+      }
+    }
+
+    function showScorePopup(score, x, y) {
+      const popup = document.createElement('div');
+      popup.className = 'score-popup';
+      popup.textContent = score > 0 ? `+${score}` : 'MISS';
+      popup.style.left = `${x + canvas.getBoundingClientRect().left}px`;
+      popup.style.top = `${y + canvas.getBoundingClientRect().top}px`;
+      document.body.appendChild(popup);
+      setTimeout(() => popup.remove(), 1000);
+    }
+
+    function showMessage(text) {
+      const existing = document.querySelector('.message');
+      if (existing) existing.remove();
+
+      const msg = document.createElement('div');
+      msg.className = 'message';
+      msg.textContent = text;
+      document.body.appendChild(msg);
+      setTimeout(() => msg.remove(), 1500);
+    }
+
+    function drawThrownDarts() {
+      state.thrownDarts.forEach((dart, i) => {
+        ctx.save();
+        ctx.translate(dart.x, dart.y);
+        ctx.rotate(Math.PI / 4);
+
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+
+        ctx.fillStyle = '#888';
+        ctx.beginPath();
+        ctx.moveTo(0, -8);
+        ctx.lineTo(3, 5);
+        ctx.lineTo(-3, 5);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#c41e3a';
+        ctx.fillRect(-1.5, 5, 3, 12);
+
+        ctx.fillStyle = '#d4af37';
+        ctx.beginPath();
+        ctx.arc(0, 17, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      });
+    }
+
+    function updateUI() {
+      document.getElementById('mainScore').textContent = state.mode === 'practice' ? state.totalScore : state.score;
+      document.getElementById('roundNum').textContent = state.round;
+      document.getElementById('dartsLeft').textContent = 3 - state.dartsThisRound;
+
+      const avg = state.totalDarts > 0 ? (state.totalScore / state.totalDarts).toFixed(1) : '-';
+      document.getElementById('avgScore').textContent = avg;
+      document.getElementById('highScore').textContent = state.highScore || '-';
+      document.getElementById('totalDarts').textContent = state.totalDarts;
+
+      const rack = document.getElementById('dartRack');
+      rack.innerHTML = '';
+      for (let i = 0; i < 3; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'dart-slot';
+        const dart = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        dart.setAttribute('viewBox', '0 0 20 60');
+        dart.classList.add('dart-icon');
+        if (i < state.dartsThisRound) dart.classList.add('used');
+        dart.innerHTML = `
+          <polygon points="10,0 14,15 6,15" fill="#888"/>
+          <rect x="8" y="15" width="4" height="25" fill="#c41e3a"/>
+          <circle cx="10" cy="45" r="5" fill="#d4af37"/>
+        `;
+        slot.appendChild(dart);
+        rack.appendChild(slot);
+      }
+
+      const roundScores = document.getElementById('roundScores');
+      roundScores.innerHTML = '';
+      state.roundScores.slice(-5).forEach((s, i) => {
+        const span = document.createElement('span');
+        span.className = 'round-score';
+        span.textContent = s;
+        roundScores.appendChild(span);
+      });
+
+      if (state.mode === 'cricket') {
+        const cricketDiv = document.getElementById('cricketNumbers');
+        cricketDiv.style.display = 'flex';
+        cricketDiv.innerHTML = '';
+        [15, 16, 17, 18, 19, 20, 'B'].forEach(n => {
+          const span = document.createElement('span');
+          span.className = 'cricket-number' + (state.closed[n] ? ' closed' : '');
+          span.textContent = n;
+          cricketDiv.appendChild(span);
+        });
+      } else {
+        document.getElementById('cricketNumbers').style.display = 'none';
+      }
+    }
+
+    function newGame() {
+      state.score = state.gameStartScore;
+      state.round = 1;
+      state.dartsThisRound = 0;
+      state.thrownDarts = [];
+      state.roundScores = [];
+      state.totalScore = 0;
+      state.closed = {};
+      state.cricketMarks = {};
+      updateUI();
+      drawBoard();
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+      });
+
+      if (mode === '501') {
+        state.gameStartScore = 501;
+        state.score = 501;
+      } else {
+        state.gameStartScore = mode === 'cricket' ? 0 : 0;
+        state.score = 0;
+      }
+
+      newGame();
+    }
+
+    function undoLastDart() {
+      if (state.thrownDarts.length > 0) {
+        const dart = state.thrownDarts.pop();
+        state.dartsThisRound--;
+        state.totalDarts--;
+
+        if (state.mode === '501') {
+          state.score += dart.score;
+        } else if (state.mode !== 'cricket') {
+          state.totalScore -= dart.score;
+        }
+
+        if (state.highScore === dart.score && state.totalDarts > 0) {
+          state.highScore = Math.max(...state.thrownDarts.map(d => d.score || 0));
+        }
+
+        updateUI();
+        drawBoard();
+      }
+    }
+
+    let powerInterval = null;
+
+    function startCharging() {
+      initAudio();
+      state.isCharging = true;
+      state.power = 0;
+      state.isAiming = true;
+
+      powerInterval = setInterval(() => {
+        state.power = Math.min(state.power + 2, 100);
+        document.getElementById('powerFill').style.height = state.power + '%';
+      }, 16);
+    }
+
+    function release() {
+      if (!state.isAiming) return;
+
+      clearInterval(powerInterval);
+      state.isCharging = false;
+      state.isAiming = false;
+
+      const rect = canvas.getBoundingClientRect();
+      const x = state.aimX - rect.left;
+      const y = state.aimY - rect.top;
+
+      if (x > 0 && x < canvas.width && y > 0 && y < canvas.height) {
+        throwDart(x, y);
+      }
+
+      state.power = 0;
+      document.getElementById('powerFill').style.height = '0%';
+      document.getElementById('crosshair').style.display = 'none';
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      state.aimX = e.clientX;
+      state.aimY = e.clientY;
+
+      const crosshair = document.getElementById('crosshair');
+      crosshair.style.display = 'block';
+      crosshair.style.left = (e.clientX - rect.left - 15) + 'px';
+      crosshair.style.top = (e.clientY - rect.top - 15) + 'px';
+
+      startCharging();
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (state.isCharging) {
+        const rect = canvas.getBoundingClientRect();
+        state.aimX = e.clientX;
+        state.aimY = e.clientY;
+
+        const crosshair = document.getElementById('crosshair');
+        crosshair.style.left = (e.clientX - rect.left - 15) + 'px';
+        crosshair.style.top = (e.clientY - rect.top - 15) + 'px';
+      }
+    });
+
+    canvas.addEventListener('mouseup', release);
+    canvas.addEventListener('mouseleave', release);
+
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      state.aimX = touch.clientX;
+      state.aimY = touch.clientY;
+
+      const crosshair = document.getElementById('crosshair');
+      crosshair.style.display = 'block';
+      crosshair.style.left = (touch.clientX - rect.left - 15) + 'px';
+      crosshair.style.top = (touch.clientY - rect.top - 15) + 'px';
+
+      startCharging();
+    });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (state.isCharging) {
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        state.aimX = touch.clientX;
+        state.aimY = touch.clientY;
+
+        const crosshair = document.getElementById('crosshair');
+        crosshair.style.left = (touch.clientX - rect.left - 15) + 'px';
+        crosshair.style.top = (touch.clientY - rect.top - 15) + 'px';
+      }
+    });
+
+    canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      release();
+    });
+
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => setMode(btn.dataset.mode));
+    });
+
+    document.getElementById('newGameBtn').addEventListener('click', newGame);
+    document.getElementById('undoBtn').addEventListener('click', undoLastDart);
+
+    document.getElementById('soundBtn').addEventListener('click', () => {
+      state.soundEnabled = !state.soundEnabled;
+      document.getElementById('soundBtn').classList.toggle('sound-on', state.soundEnabled);
+      document.getElementById('soundBtn').textContent = state.soundEnabled ? 'Sound' : 'Mute';
+    });
+
+    window.addEventListener('resize', resize);
+    resize();
+    newGame();
+  </script>
+</body>
+</html>
