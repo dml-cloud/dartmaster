@@ -9,6 +9,16 @@
 
 ---
 
+## Splash Screen
+
+- **Layout**: Full-screen overlay with dark wood background
+- **Title**: "Darkmaster" in large gold gradient text with subtle pulse animation
+- **Subtitle**: "by DML Studios" in small muted text below title
+- **Button**: "Entrar" button with gold border, hover glow effect
+- **Transition**: Fade out on click, reveals game container
+
+---
+
 ## 2. Visual & Rendering Specification
 
 ### Scene Setup
